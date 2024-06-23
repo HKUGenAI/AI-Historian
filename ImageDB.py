@@ -79,6 +79,6 @@ in this order. Don't bold any text.
                 csvwriter.writerow([filename, image_path, response_text, response2_text])
 
 # Example usage
-folder_path = 'imgfd'
-output_file = 'output2.csv'
+folder_path = 'jpg'
+output_file = 'output.csv'
 process_images_in_folder(folder_path, output_file)
