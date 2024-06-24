@@ -1,7 +1,7 @@
 import os
 import base64
 import re
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 from pypdf import PdfReader, PdfWriter
 from pypdf import PdfReader, PdfWriter
 import openai
@@ -14,7 +14,7 @@ from azure.search.documents.models import VectorizedQuery
 import gradio as gr
 
 # Get Environment Settings from .env file
-load_dotenv()
+load_dotenv(find_dotenv())
 
 # Get Azure Search API Keys
 # service_endpoint = f"{os.getenv('AZURE_SEARCH_SERVICE_ENDPOINT')}"
