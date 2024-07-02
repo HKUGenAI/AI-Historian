@@ -40,13 +40,24 @@ azure_openai_client = AzureOpenAI(
 # Set the title of the Streamlit app
 st.title("HKU AI Historian")
 
+systemMessage = """AI Assistant that helps user to answer questions from sources provided.
+                    Answer ONLY with the facts listed in the list of sources below. 
+                    If there isn't enough information below, say you don't know. Do not generate answers that don't use the sources below. 
+                    Each source has a name followed by colon and the actual information, always include the source name for each fact you use in the response. 
+                    Use square brackets to reference the source, e.g. [info1.txt]. Don't combine sources, list each source separately, e.g. [info1.txt][info2.pdf].
+                """
+history_init = [
+    {'role' : 'user', 'content' : systemMessage},
+    {'role' : 'system', 'content' : ""}
+]
+
 # Initialize session state for chat history if not already present
 if "chat_history" not in st.session_state:
     st.session_state["chat_history"] = []
 
 # Initialize session state for OpenAI chat history if not already present
 if "history_openai" not in st.session_state:
-    st.session_state["history_openai"] = []
+    st.session_state["history_openai"] = history_init
 
 
 # Function to compute text embedding using Azure OpenAI
