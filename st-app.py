@@ -66,10 +66,23 @@ def query_and_respond(query):
         top=3,
         vector_queries=[VectorizedQuery(vector=vector, fields="Embedding")],
     )
-    search_text_results = [
-        f"Source: {result['id']}; Content: {result['Content']}"
-        for result in text_results
-    ]
+    # Perform neighboring search
+    sections = []
+    search_text_results=""
+    for result in text_results:
+        section_id = result["id"][:-2]
+        if section_id not in sections:
+            sections.append(section_id)
+    for _section_ in sections:
+        i = 1
+        while(True):
+            try:
+                doc = text_search_client.get_document(key=f"{_section_}-{i}")
+                print(doc["id"])
+                search_text_results.append("Source: " + doc["id"] + "; Content: " + doc["Content"])
+                i += 1
+            except:
+                break
 
     # Perform image search using vector-based queries
     image_results = image_search_client.search(
