@@ -8,6 +8,7 @@ from azure.search.documents.models import VectorizedQuery
 import openai
 from openai import AzureOpenAI
 import re
+from filter_images import filter_images
 
 # Load environment variables
 load_dotenv(find_dotenv())
@@ -40,9 +41,8 @@ azure_openai_client = AzureOpenAI(
 # Set the title of the Streamlit app
 st.title("HKU AI Historian")
 
-systemMessage = """AI Assistant that helps user to answer questions from sources provided. Be specific in your answers.
-                    Answer ONLY with the facts listed in the list of sources below.
-                    After anwering the user quesitons, start a new line and give 3 keywords (names, places, etc.) of your response. Do NOT give keywords "HKU", "The University of Hong Kong", "Hong Kong".
+systemMessage = """You are a friendly and informative AI Historian that helps user to answer questions from sources provided. Be specific in your answers.
+                    Answer ONLY with the facts listed in the list of sources below. If the question is not related to the sources, politely decline. 
                     If there isn't enough information below, say you don't know. Do not generate answers that don't use the sources below. 
                     Each source has a name followed by colon and the actual information, always include the source name for each fact you use in the response. 
                     Use square brackets to reference the source, e.g. [info1.txt]. Don't combine sources, list each source separately, e.g. [info1.txt][info2.pdf].
@@ -87,6 +87,7 @@ def query_and_respond(query):
     used_sections = []
     for sec in sections:
         doc = text_search_client.get_document(key=sec)
+        if doc["id"] == "Chapter-Section-Paragraph": continue
         print(doc["id"])
         used_sections.append(doc["id"])
         search_text_results.append("Source: " + doc["id"] + "; Content: " + doc["Content"])
@@ -126,21 +127,20 @@ def query_and_respond(query):
 
     # Perform image search using vector-based KEYWORDS
     chat_content = response.choices[0].message.content
-    image_search_keywords = chat_content.split("\n")[-1].replace("Keywords: ", "")
-    print(image_search_keywords)
     image_results = image_search_client.search(
         search_text=None,
-        top=3,
-        vector_queries=[VectorizedQuery(vector=get_embedding(image_search_keywords), fields="Embedding")],
+        top=5,
+        vector_queries=[VectorizedQuery(vector=get_embedding(chat_content), fields="Embedding")],
     )
     image_search_results = [
         f"\nImage: {result['Image_name']}; Caption: {result['Caption']}"
         for result in image_results
     ]
+    filtered_images = filter_images(azure_openai_client, chat_content, image_search_results)
     return (
         response.choices[0].message.content,
         search_text_results,
-        image_search_results,
+        filtered_images,
     )
 
 
@@ -159,17 +159,12 @@ if user_input:
             height=100,
             key=chat["user"] + chat["message"],
         )
+    print(image_result)
+    if image_result != ['']:
+        # Extract and display images from the search results
+        file_names = []
+        # viewing in a grid
+        for i in range(len(image_result)):
+            file_names.append("./jpg/" + str(image_result[i]))
 
-    # Extract and display images from the search results
-    file_name_pattern = r"Image: (.*?);"
-    file_names = [
-        re.search(file_name_pattern, line).group(1)
-        for line in image_result
-        if re.search(file_name_pattern, line)
-    ]
-
-    # viewing in a grid
-    for i in range(len(file_names)):
-        file_names[i] = "./jpg/" + str(file_names[i])
-
-    st.image(file_names, width=300)
+        st.image(file_names, width=300)
