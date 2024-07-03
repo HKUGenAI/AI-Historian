@@ -10,6 +10,9 @@ from openai import AzureOpenAI
 import re
 from filter_images import filter_images
 
+# Set the page layout to wide
+st.set_page_config(page_title="HKU AI Historian", page_icon="🏫", layout="wide")
+
 # Load environment variables
 load_dotenv(find_dotenv())
 
@@ -146,22 +149,29 @@ def query_and_respond(query):
         filtered_images,
     )
 
+# Display the text bubbles with the chat history
+def show_chat_history():
+    for chat in st.session_state["chat_history"]:
+        if chat["user"] == "AI": h = 300
+        elif chat["user"] == "You": h = 100
+        st.text_area(
+            f"{chat['user']}:",
+            height=h,
+            value=chat["message"],
+            key=chat["user"] + chat["message"],
+        )
 
 # User interface for chat interaction
 user_input = st.chat_input("Type your message here:")
 if user_input:
-    ai_response, search_results, image_result = query_and_respond(user_input)
     st.session_state["chat_history"].append({"user": "You", "message": user_input})
+    # Show chat history so far
+    show_chat_history()
+    ai_response, search_results, image_result = query_and_respond(user_input)
     st.session_state["chat_history"].append({"user": "AI", "message": ai_response})
-
-    # Display the conversation history
-    for chat in st.session_state["chat_history"]:
-        st.text_area(
-            f"{chat['user']}:",
-            value=chat["message"],
-            height=100,
-            key=chat["user"] + chat["message"],
-        )
+    # Show AI response
+    st.text_area("AI:", value=ai_response, height=300, key="AI"+ai_response)
+    
     print(image_result)
     if image_result != ['']:
         # Extract and display images from the search results

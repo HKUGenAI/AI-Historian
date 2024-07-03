@@ -8,11 +8,9 @@ from openai import AzureOpenAI
 def filter_images(openai_client, text, image_list):
     prompt = """Below is a section of text, followed by a list of images. 
                 If the text is not a historical answer, i.e. a description or explanation of historical events or people, return an empty string.
-                Otherwise, based on the image titles and captions, filter and remove any images with titles, captions, or content that 
-                cannot be found or are not included in the text.
-                For instance, if the text does not explicitly include the name 'James Cantlie', remove 'Sir James Cantlie.jpg' from the image list.
-                Remove as many images as possible. 
-                Return only the filenames of the images, each separated by a newline.
+                Otherwise, based on the image titles and captions, if the image title or caption cannot be found in the text, remove it from the list.
+                For instance, if the name 'James Cantlie' cannot be found in the text, remove 'Sir James Cantlie.jpg' from the image list.
+                Return only the filenames of the remaining, unremoved images, each separated by a newline.
              """
     history = [
         {'role' : 'user', 'content' : ""},
