@@ -40,15 +40,16 @@ azure_openai_client = AzureOpenAI(
 # Set the title of the Streamlit app
 st.title("HKU AI Historian")
 
-systemMessage = """AI Assistant that helps user to answer questions from sources provided.
-                    Answer ONLY with the facts listed in the list of sources below. 
+systemMessage = """AI Assistant that helps user to answer questions from sources provided. Be specific in your answers.
+                    Answer ONLY with the facts listed in the list of sources below.
+                    After anwering the user quesitons, start a new line and give 3 keywords (names, places, etc.) of your response. Do NOT give keywords "HKU", "The University of Hong Kong", "Hong Kong".
                     If there isn't enough information below, say you don't know. Do not generate answers that don't use the sources below. 
                     Each source has a name followed by colon and the actual information, always include the source name for each fact you use in the response. 
                     Use square brackets to reference the source, e.g. [info1.txt]. Don't combine sources, list each source separately, e.g. [info1.txt][info2.pdf].
                 """
 history_init = [
-    {'role' : 'user', 'content' : systemMessage},
-    {'role' : 'system', 'content' : ""}
+    {'role' : 'user', 'content' : ""},
+    {'role' : 'system', 'content' : systemMessage}
 ]
 
 # Initialize session state for chat history if not already present
@@ -74,37 +75,27 @@ def query_and_respond(query):
     # Perform text search using vector-based queries
     text_results = text_search_client.search(
         search_text=None,
-        top=3,
+        top=7,
         vector_queries=[VectorizedQuery(vector=vector, fields="Embedding")],
     )
     # Perform neighboring search
     sections = []
-    search_text_results=""
+    search_text_results = []
     for result in text_results:
         section_id = result["id"][:-2]
         if section_id not in sections:
             sections.append(section_id)
-    for _section_ in sections:
+    print(sections)
+    for sec in sections:
         i = 1
         while(True):
             try:
-                doc = text_search_client.get_document(key=f"{_section_}-{i}")
+                doc = text_search_client.get_document(key=f"{sec}-{i}")
                 print(doc["id"])
                 search_text_results.append("Source: " + doc["id"] + "; Content: " + doc["Content"])
                 i += 1
             except:
                 break
-
-    # Perform image search using vector-based queries
-    image_results = image_search_client.search(
-        search_text=None,
-        top=3,
-        vector_queries=[VectorizedQuery(vector=vector, fields="Embedding")],
-    )
-    image_search_results = [
-        f"\nImage: {result['Image_name']}; Caption: {result['Caption']}"
-        for result in image_results
-    ]
 
     # Update conversation history for AI response
     chat_message = f"{query} Source: " + " ".join(search_text_results)
@@ -122,6 +113,19 @@ def query_and_respond(query):
     )
     st.session_state["history_openai"] = history
 
+    # Perform image search using vector-based KEYWORDS
+    chat_content = response.choices[0].message.content
+    image_search_keywords = chat_content.split("\n")[-1].replace("Keywords: ", "")
+    print(image_search_keywords)
+    image_results = image_search_client.search(
+        search_text=None,
+        top=3,
+        vector_queries=[VectorizedQuery(vector=get_embedding(image_search_keywords), fields="Embedding")],
+    )
+    image_search_results = [
+        f"\nImage: {result['Image_name']}; Caption: {result['Caption']}"
+        for result in image_results
+    ]
     return (
         response.choices[0].message.content,
         search_text_results,
