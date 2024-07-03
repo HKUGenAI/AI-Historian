@@ -70,48 +70,59 @@ def get_embedding(text, model="textembedding"):
 
 # Function to handle user queries and generate responses
 def query_and_respond(query):
-    vector = get_embedding(query)
+    vector_query = get_embedding(query)
 
     # Perform text search using vector-based queries
     text_results = text_search_client.search(
         search_text=None,
-        top=7,
-        vector_queries=[VectorizedQuery(vector=vector, fields="Embedding")],
+        top=5,
+        vector_queries=[VectorizedQuery(vector=vector_query, fields="Embedding")],
     )
     # Perform neighboring search
     sections = []
-    search_text_results = []
     for result in text_results:
-        section_id = result["id"][:-2]
-        if section_id not in sections:
-            sections.append(section_id)
+        sections.append(result["id"])
     print(sections)
+    search_text_results = []
+    used_sections = []
     for sec in sections:
-        i = 1
-        while(True):
-            try:
-                doc = text_search_client.get_document(key=f"{sec}-{i}")
+        doc = text_search_client.get_document(key=sec)
+        print(doc["id"])
+        used_sections.append(doc["id"])
+        search_text_results.append("Source: " + doc["id"] + "; Content: " + doc["Content"])
+        try:
+            neighbor_sec = sec[:-2] + "-" + str(int(sec[-1]) + 1)
+            if neighbor_sec not in used_sections:
+                doc = text_search_client.get_document(key=neighbor_sec)
                 print(doc["id"])
+                used_sections.append(doc["id"])
                 search_text_results.append("Source: " + doc["id"] + "; Content: " + doc["Content"])
-                i += 1
-            except:
-                break
-
+        except:
+            pass
+        try:
+            neighbor_sec = sec[:-2] + "-" + str(int(sec[-1]) - 1)
+            if neighbor_sec not in used_sections:
+                doc = text_search_client.get_document(key=neighbor_sec)
+                print(doc["id"])
+                used_sections.append(doc["id"])
+                search_text_results.append("Source: " + doc["id"] + "; Content: " + doc["Content"])
+        except:
+            pass
     # Update conversation history for AI response
     chat_message = f"{query} Source: " + " ".join(search_text_results)
-    history = st.session_state["history_openai"]
-    history.append({"role": "user", "content": chat_message})
+    history_openai = st.session_state["history_openai"]
+    history_openai.append({"role": "user", "content": chat_message})
 
     # Generate AI response using chat completions
     response = azure_openai_client.chat.completions.create(
         model="summer",
-        messages=history,
+        messages=history_openai,
         temperature=0.7,
     )
-    history.append(
+    history_openai.append(
         {"role": "assistant", "content": response.choices[0].message.content}
     )
-    st.session_state["history_openai"] = history
+    st.session_state["history_openai"] = history_openai
 
     # Perform image search using vector-based KEYWORDS
     chat_content = response.choices[0].message.content
