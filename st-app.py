@@ -43,6 +43,7 @@ st.title("HKU AI Historian")
 
 systemMessage = """You are a friendly and informative AI Historian that helps user to answer questions from sources provided. Be specific in your answers.
                     Answer ONLY with the facts listed in the list of sources below. If the question is not related to the sources, politely decline. 
+                    After anwering the user quesitons, start a new line and give 3 keywords (names, places, etc.) of your response. Do NOT give keywords "HKU", "The University of Hong Kong", "Hong Kong".
                     If there isn't enough information below, say you don't know. Do not generate answers that don't use the sources below. 
                     Each source has a name followed by colon and the actual information, always include the source name for each fact you use in the response. 
                     Use square brackets to reference the source, e.g. [info1.txt]. Don't combine sources, list each source separately, e.g. [info1.txt][info2.pdf].
@@ -127,10 +128,12 @@ def query_and_respond(query):
 
     # Perform image search using vector-based KEYWORDS
     chat_content = response.choices[0].message.content
+    image_search_keywords = chat_content.split("\n")[-1].replace("Keywords: ", "")
+    print(image_search_keywords)
     image_results = image_search_client.search(
         search_text=None,
         top=5,
-        vector_queries=[VectorizedQuery(vector=get_embedding(chat_content), fields="Embedding")],
+        vector_queries=[VectorizedQuery(vector=get_embedding(image_search_keywords), fields="Embedding")],
     )
     image_search_results = [
         f"\nImage: {result['Image_name']}; Caption: {result['Caption']}"
