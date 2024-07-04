@@ -178,6 +178,7 @@ if user_input:
         file_names = []
         # viewing in a grid
         for i in range(len(image_result)):
+            print(image_result[i])
             file_names.append("./jpg/" + str(image_result[i]))
 
         st.image(file_names, width=300)
