@@ -11,7 +11,7 @@ import re
 from filter_images import filter_images
 
 # Set the page layout to wide
-st.set_page_config(page_title="HKU AI Historian", page_icon="🏫", layout="wide")
+st.set_page_config(page_title="HKU AI Historian Assistant", page_icon="🏫", layout="wide")
 
 # Load environment variables
 load_dotenv(find_dotenv())
@@ -47,9 +47,10 @@ st.title("HKU AI Historian")
 systemMessage = """You are a friendly and informative AI Historian that helps user to answer questions from sources provided. Be specific in your answers.
                     Answer ONLY with the facts listed in the list of sources below. If the question is not related to the sources, politely decline. 
                     After anwering the user quesitons, start a new line and give 3 keywords (names, places, etc.) of your response. Do NOT give keywords "HKU", "The University of Hong Kong", "Hong Kong".
-                    If there isn't enough information below, say you don't know. Do not generate answers that don't use the sources below. 
+                    If there isn't enough information below, say you don't know. Do not generate answers that don't use the sources below.
                     Each source has a name followed by colon and the actual information, always include the source name for each fact you use in the response. 
                     Use square brackets to reference the source, e.g. [info1.txt]. Don't combine sources, list each source separately, e.g. [info1.txt][info2.pdf].
+                    NEVER give out the original source text without paraphrasing.
                 """
 history_init = [
     {'role' : 'user', 'content' : ""},
