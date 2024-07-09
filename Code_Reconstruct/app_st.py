@@ -12,10 +12,11 @@ from setup import text_search_client, image_search_client, azure_openai_client, 
 from filter_images import filter_images
 
 # Set the page layout to wide
-st.set_page_config(page_title="HKU AI Historian Assistant", page_icon="🏫", layout="wide")
+st.set_page_config(page_title="AIHA", page_icon="🔎", layout="wide")
 
 # Set the title of the Streamlit app
-st.title("HKU AI Historian")
+st.title("AI Historian Assistant")
+
 systemMessage = """You are a friendly and informative AI Historian that helps user to answer questions from sources provided. Be specific in your answers.
                     Answer ONLY with the facts listed in the list of sources below. If the question is not related to the sources, politely decline. 
                     After anwering the user quesitons, start a new line and give 3 keywords (names, places, etc.) of your response. Do NOT give keywords "HKU", "The University of Hong Kong", "Hong Kong".
@@ -103,11 +104,12 @@ def query_and_respond(query):
         top=5,
         vector_queries=[VectorizedQuery(vector=get_embedding(image_search_keywords), fields="Embedding")],
     )
-    image_search_results = [
-        f"\nImage: {result['Image_name']}; Caption: {result['Caption']}"
-        for result in image_results
-    ]
-    filtered_images = filter_images(azure_openai_client, chat_content, image_search_results)
+    image_search_results = [(result["Image_name"], result["Caption"]) for result in image_results]
+    filtered_image_names = filter_images(azure_openai_client, chat_content, image_search_results)
+    filtered_images = []
+    for i in image_search_results:
+        if i[0] in filtered_image_names:
+            filtered_images.append(i)
     return (
         response.choices[0].message.content,
         search_text_results,
@@ -126,6 +128,16 @@ def show_chat_history():
             key=chat["user"] + chat["message"],
         )
 
+def filename_converter(filename):
+    # Remove the file extension
+    name_without_extension = os.path.splitext(filename)[0]
+    # Remove leading numbers/special characters and replace underscores/hyphens with spaces
+    name_cleaned = ''.join([char if char.isalnum() else ' ' for char in name_without_extension if not char.isdigit()])
+    name_cleaned = name_cleaned.replace('_', ' ').replace('-', ' ').strip()
+    # Capitalize the first letter of each word
+    image_title = ' '.join(word.capitalize() for word in name_cleaned.split())
+    return image_title
+
 # User interface for chat interaction
 user_input = st.chat_input("Type your message here:")
 if user_input:
@@ -137,13 +149,11 @@ if user_input:
     # Show AI response
     st.text_area("AI:", value=ai_response, height=300, key="AI"+ai_response)
     
-    print(image_result)
     if image_result != ['']:
         # Extract and display images from the search results
-        file_names = []
-        # viewing in a grid
-        for i in range(len(image_result)):
-            print(image_result[i])
-            file_names.append("./jpg/" + str(image_result[i]))
-
-        st.image(file_names, width=300)
+        with st.sidebar:
+            st.subheader("Image Results")
+            for i in range(len(image_result)):
+                if image_result[i][1] == 'None': caption = filename_converter(image_result[i][0])
+                else: caption = image_result[i][1]
+                st.image("./jpg/" + str(image_result[i][0]), caption=caption)
