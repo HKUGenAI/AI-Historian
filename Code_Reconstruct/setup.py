@@ -8,7 +8,6 @@ from azure.search.documents import SearchClient
 from azure.search.documents.indexes import SearchIndexClient
 from azure.search.documents.indexes.models import *
 from azure.search.documents.models import VectorizedQuery
-import openai
 from openai import AzureOpenAI
 
 
@@ -23,16 +22,11 @@ image_search_index_name = os.getenv("AZURE_SEARCH_INDEX_NAME_IMAGE")
 
 ## Create a client for handling creation of indexes
 index_client = SearchIndexClient(service_endpoint, index_creds)
-## Create a client for querying the index
+## Create a client for querying the index``
 text_search_client = SearchClient(endpoint=service_endpoint, index_name=text_search_index_name, credential=index_creds)
 image_search_client = SearchClient(endpoint=service_endpoint, index_name=image_search_index_name, credential=index_creds)
 
 # Azure Openai Settings
-openai.api_type = "azure"
-openai.api_key = os.getenv("OPENAI_API_KEY")
-openai.azure_endpoint = os.getenv("OPENAI_API_ENDPOINT")
-openai.api_version = os.getenv("OPENAI_API_VERSION")
-
 azure_openai_client = AzureOpenAI(
     api_key = os.getenv("OPENAI_API_KEY"),
     api_version = os.getenv("OPENAI_API_VERSION"),
