@@ -12,15 +12,16 @@ from openai import AzureOpenAI
 
 import setup
 
-image_index = SearchIndex(
-    name=setup.image_search_index_name,
+index = SearchIndex(
+    # name=setup.text_search_index_name,
+    name="friday",
     fields=[
         SimpleField(name="id", type="Edm.String", key=True),
-        SearchableField(name="Image_name", type="Edm.String", analyzer_name="standard.lucene", 
+        SearchableField(name="Source", type="Edm.String", analyzer_name="standard.lucene", 
                         filterable=True, sortable=True, facetable=True, searchable=True),
-        SearchableField(name="Image_path", type="Edm.String", analyzer_name="standard.lucene",
+        SearchableField(name="Page", type="Edm.String", analyzer_name="standard.lucene",
                         filterable=True, sortable=True, facetable=True, searchable=True),
-        SearchableField(name="Caption", type="Edm.String", analyzer_name="standard.lucene",
+        SearchableField(name="Content", type="Edm.String", analyzer_name="standard.lucene",
                         filterable=True, sortable=True, facetable=True, searchable=True),
         SearchField(name="Embedding", type=SearchFieldDataType.Collection(SearchFieldDataType.Single),  
             hidden=False, searchable=True, filterable=False, sortable=False, facetable=False,
@@ -36,4 +37,5 @@ image_index = SearchIndex(
         ]
     )
 )
-setup.index_client.create_or_update_index(image_index)
+
+setup.index_client.create_or_update_index(index)
